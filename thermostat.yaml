@@ -99,10 +99,10 @@ action:
         
         {% if not (vars.in_time_range and vars.is_family_home) %}
           {% set adjustment = adjustment + float(input['away_modifier']) %}
-        {% endif %}
-        
-        {% if vars.is_vacation_on %}
-          {% set adjustment = adjustment + float(input['vacation_modifier']) %}
+        {% else %}
+          {% if vars.is_vacation_on %}
+            {% set adjustment = adjustment + float(input['vacation_modifier']) %}
+          {% endif %}
         {% endif %}
         
         {% if vars.is_thermostat_off %}

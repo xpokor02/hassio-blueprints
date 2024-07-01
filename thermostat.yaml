@@ -44,7 +44,7 @@ blueprint:
         number:
           min: 0.0
           max: 10.0
-          step: 0.5
+          step: 1
     away_modifier:
       name: Away Modifier
       description: Temperature adjustment when family is away or outside the time range
@@ -53,7 +53,7 @@ blueprint:
         number:
           min: 0.0
           max: 10.0
-          step: 0.5
+          step: 1
     time_range_start:
       name: Time Range Start
       description: Start of the active time range (HH:MM:SS)
@@ -98,14 +98,17 @@ action:
         {% set adjustment = 0 %}
         {% set base_temp = float(states(home_temp)) %}
         
-        {% if not (now().time() >= strptime(time_range_start, '%H:%M:%S').time() and now().time() <= strptime(time_range_end, '%H:%M:%S').time() and is_state(family_group, 'home')) %}
+        {% if is_state(family_group, 'home') %}
+          {% if not (now().time() >= strptime(time_range_start, '%H:%M:%S').time() and now().time() <= strptime(time_range_end, '%H:%M:%S').time() and is_state(thermostat, 'heat')) %}
+            {% set adjustment = adjustment + float(away_modifier) %}
+          {% endif %}
+        {% else %}  
           {% set adjustment = adjustment + float(away_modifier) %}
+          {% if is_state(vacation_mode, 'on') %}
+            {% set adjustment = adjustment + float(vacation_modifier) %}
+          {% endif %}
         {% endif %}
-        
-        {% if is_state(vacation_mode, 'on') %}
-          {% set adjustment = adjustment + float(vacation_modifier) %}
-        {% endif %}
-        
+
         {% if is_state(thermostat, 'off') %}
           {% set adjustment = adjustment + float(summer_modifier) %}
         {% else %}

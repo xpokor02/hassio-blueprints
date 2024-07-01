@@ -96,7 +96,7 @@ action:
     data:
       temperature: >
         {% set adjustment = 0 %}
-        {% set base_temp = float(state(home_temp)) %}
+        {% set base_temp = float(states(home_temp)) %}
         
         {% if not (now().time() >= strptime(time_range_start, '%H:%M:%S').time() and now().time() <= strptime(time_range_end, '%H:%M:%S').time() and is_state(family_group, 'home')) %}
           {% set adjustment = adjustment + float(away_modifier) %}

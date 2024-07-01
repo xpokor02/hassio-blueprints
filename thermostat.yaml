@@ -82,14 +82,14 @@ trigger:
     at: !input time_range_end
 
 variables:
-  base_temp: !lambda "return float(states['input_number'][input['home_temp']]['state']);"
-  is_family_home: !lambda "return states['group'][input['family_group']]['state'] == 'home';"
-  is_vacation_on: !lambda "return states['input_boolean'][input['vacation_mode']]['state'] == 'on';"
-  is_thermostat_off: !lambda "return states['climate'][input['thermostat']]['state'] == 'off';"
-  in_time_range: !lambda |
-    var time_range_start = strptime(input['time_range_start'], '%H:%M:%S').time();
-    var time_range_end = strptime(input['time_range_end'], '%H:%M:%S').time();
-    return now().time() >= time_range_start && now().time() <= time_range_end;
+  base_temp: "{{ states('input_number.' ~ input['home_temp']) | float }}"
+  is_family_home: "{{ states('group.' ~ input['family_group']) == 'home' }}"
+  is_vacation_on: "{{ states('input_boolean.' ~ input['vacation_mode']) == 'on' }}"
+  is_thermostat_off: "{{ states('climate.' ~ input['thermostat']) == 'off' }}"
+  in_time_range: >
+    {% set time_start = strptime(input['time_range_start'], '%H:%M:%S').time() %}
+    {% set time_end = strptime(input['time_range_end'], '%H:%M:%S').time() %}
+    {{ now().time() >= time_start and now().time() <= time_end }}
 
 action:
   - service: climate.set_temperature
@@ -99,12 +99,12 @@ action:
         
         {% if not (vars.in_time_range and vars.is_family_home) %}
           {% set adjustment = adjustment + float(input['away_modifier']) %}
-        {% else %}
-          {% if vars.is_vacation_on %}
-            {% set adjustment = adjustment + float(input['vacation_modifier']) %}
-          {% endif %}
         {% endif %}
-            
+        
+        {% if vars.is_vacation_on %}
+          {% set adjustment = adjustment + float(input['vacation_modifier']) %}
+        {% endif %}
+        
         {% if vars.is_thermostat_off %}
           {% set adjustment = adjustment + float(input['summer_modifier']) %}
         {% else %}

@@ -67,7 +67,7 @@ blueprint:
       selector:
         time:
 variables:
-  base_temp: !input home_temp
+  home_temp: !input home_temp
   time_range_start: !input time_range_start
   time_range_end: !input time_range_end
   summer_modifier: !input summer_modifier
@@ -96,6 +96,7 @@ action:
     data:
       temperature: >
         {% set adjustment = 0 %}
+        {% set base_temp = float(state(home_temp)) %}
         
         {% if not (now().time() >= strptime(time_range_start, '%H:%M:%S').time() and now().time() <= strptime(time_range_end, '%H:%M:%S').time() and is_state(family_group, 'home')) %}
           {% set adjustment = adjustment + float(away_modifier) %}

@@ -84,8 +84,8 @@ trigger:
 variables:
   base_temp: "{{ states('input_number.' ~ input['home_temp']) | float }}"
   is_family_home: "{{ states('group.' ~ input['family_group']) == 'home' }}"
-  is_vacation_on: "{{ states('input_boolean.' ~ input['vacation_mode']) == 'on' }}"
-  is_thermostat_off: "{{ states('climate.' ~ input['thermostat']) == 'off' }}"
+  is_vacation_on: "{{ is_state('input_boolean.' ~ input['vacation_mode'], 'on') }}"
+  is_thermostat_off: "{{ is_state('climate.' ~ input['thermostat'], 'off') }}"
   in_time_range: >
     {% set time_start = strptime(input['time_range_start'], '%H:%M:%S').time() %}
     {% set time_end = strptime(input['time_range_end'], '%H:%M:%S').time() %}
@@ -111,6 +111,6 @@ action:
           {% set adjustment = adjustment * -1 %}
         {% endif %}
         
-        {{ (vars.base_temp + adjustment) | string }}
+        {{ (vars.base_temp + adjustment) | round(1) }}
     target:
-      entity_id: climate.topeni_thermostat
+      entity_id: !input thermostat

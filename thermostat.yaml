@@ -76,8 +76,6 @@ trigger:
     entity_id: !input thermostat
   - platform: state
     entity_id: !input vacation_mode
-  - platform: state
-    entity_id: !input vacation_mode
   - platform: time
     at: !input time_range_start
   - platform: time
@@ -87,23 +85,23 @@ action:
   - service: climate.set_temperature
     data:
       temperature: >
-        {% set base_temp = states('!input home_temp') | float %}
+        {% set base_temp = states('input_number.home_temp') | float %}
         {% set adjustment = 0 %}
         
-        {% if not (time_between(now(), !input.time_range_start, !input.time_range_end) and is_state('!input family_group', 'home')) %}
-          {% set adjustment = adjustment + !input.away_modifier %}
+        {% if not (now().time() >= strptime(input.time_range_start, '%H:%M:%S').time() and now().time() <= strptime(input.time_range_end, '%H:%M:%S').time() and is_state('group.family', 'home')) %}
+          {% set adjustment = adjustment + float(input.away_modifier) %}
         {% else %}
-          {% if is_state('!input vacation_mode', 'on') %}
-            {% set adjustment = adjustment + !input.vacation_modifier %}
+          {% if is_state('input_boolean.dovolena', 'on') %}
+            {% set adjustment = adjustment + float(input.vacation_modifier) %}
           {% endif %}
         {% endif %}
-
-        {% if is_state('!input thermostat', 'off') %}
-          {% set adjustment = adjustment + !input.summer_modifier %}
+        
+        {% if is_state('climate.topeni_thermostat', 'off') %}
+          {% set adjustment = adjustment + float(input.summer_modifier) %}
         {% else %}
           {% set adjustment = adjustment * -1 %}
         {% endif %}
         
-        {{ base_temp + adjustment }}
+        {{ (base_temp + adjustment) | string }}
     target:
-      entity_id: !input thermostat
+      entity_id: climate.topeni_thermostat

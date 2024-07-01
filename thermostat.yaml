@@ -66,16 +66,16 @@ blueprint:
       default: '23:00:00'
       selector:
         time:
-
 variables:
-  base_temp: "{{ states('input_number.' ~ home_temp) | float }}"
-  is_family_home: "{{ states('group.' ~ family_group) == 'home' }}"
-  is_vacation_on: "{{ is_state('input_boolean.' ~ vacation_mode, 'on') }}"
-  is_thermostat_off: "{{ is_state('climate.' ~ thermostat, 'off') }}"
-  in_time_range: >
-    {% set time_start = strptime(time_range_start, '%H:%M:%S').time() %}
-    {% set time_end = strptime(time_range_end, '%H:%M:%S').time() %}
-    {{ now().time() >= time_start and now().time() <= time_end }}
+  base_temp: !input home_temp
+  time_range_start: !input time_range_start
+  time_range_end: !input time_range_end
+  summer_modifier: !input summer_modifier
+  vacation_modifier: !input vacation_modifier
+  away_modifier: !input away_modifier
+  vacation_mode: !input vacation_mode
+  thermostat: !input thermostat
+  family_group: !input family_group
 
 trigger:
   - platform: state
@@ -97,20 +97,20 @@ action:
       temperature: >
         {% set adjustment = 0 %}
         
-        {% if not (vars.in_time_range and vars.is_family_home) %}
-          {% set adjustment = adjustment + float(input['away_modifier']) %}
-        {% else %}
-          {% if vars.is_vacation_on %}
-            {% set adjustment = adjustment + float(input['vacation_modifier']) %}
-          {% endif %}
+        {% if not (now().time() >= strptime(time_range_start, '%H:%M:%S').time() and now().time() <= strptime(time_range_end, '%H:%M:%S').time() and is_state(family_group, 'home')) %}
+          {% set adjustment = adjustment + float(away_modifier) %}
         {% endif %}
         
-        {% if vars.is_thermostat_off %}
-          {% set adjustment = adjustment + float(input['summer_modifier']) %}
+        {% if vacation_mode == 'on' %}
+          {% set adjustment = adjustment + float(vacation_modifier) %}
+        {% endif %}
+        
+        {% if is_state(thermostat, 'off') %}
+          {% set adjustment = adjustment + float(summer_modifier) %}
         {% else %}
           {% set adjustment = adjustment * -1 %}
         {% endif %}
         
-        {{ (vars.base_temp + adjustment) | round(1) }}
+        {{ (base_temp + adjustment) | string }}
     target:
       entity_id: !input thermostat

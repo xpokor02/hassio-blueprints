@@ -68,13 +68,13 @@ blueprint:
         time:
 
 variables:
-  base_temp: "{{ states(!input home_temp) | float }}"
-  is_family_home: "{{ states(!input family_group) == 'home' }}"
-  is_vacation_on: "{{ is_state(!input vacation_mode, 'on') }}"
-  is_thermostat_off: "{{ is_state(!input thermostat, 'off') }}"
+  base_temp: "{{ states('input_number.' ~ home_temp) | float }}"
+  is_family_home: "{{ states('group.' ~ family_group) == 'home' }}"
+  is_vacation_on: "{{ is_state('input_boolean.' ~ vacation_mode, 'on') }}"
+  is_thermostat_off: "{{ is_state('climate.' ~ thermostat, 'off') }}"
   in_time_range: >
-    {% set time_start = strptime(!input time_range_start, '%H:%M:%S').time() %}
-    {% set time_end = strptime(!input time_range_end, '%H:%M:%S').time() %}
+    {% set time_start = strptime(time_range_start, '%H:%M:%S').time() %}
+    {% set time_end = strptime(time_range_end, '%H:%M:%S').time() %}
     {{ now().time() >= time_start and now().time() <= time_end }}
 
 trigger:
@@ -97,20 +97,20 @@ action:
       temperature: >
         {% set adjustment = 0 %}
         
-        {% if not (in_time_range and is_family_home) %}
-          {% set adjustment = adjustment + float(away_modifier) %}
+        {% if not (vars.in_time_range and vars.is_family_home) %}
+          {% set adjustment = adjustment + float(input['away_modifier']) %}
         {% else %}
-          {% if is_vacation_on %}
-            {% set adjustment = adjustment + float(vacation_modifier) %}
+          {% if vars.is_vacation_on %}
+            {% set adjustment = adjustment + float(input['vacation_modifier']) %}
           {% endif %}
         {% endif %}
         
-        {% if is_thermostat_off %}
-          {% set adjustment = adjustment + float(summer_modifier) %}
+        {% if vars.is_thermostat_off %}
+          {% set adjustment = adjustment + float(input['summer_modifier']) %}
         {% else %}
           {% set adjustment = adjustment * -1 %}
         {% endif %}
         
-        {{ (base_temp + adjustment) | round(1) }}
+        {{ (vars.base_temp + adjustment) | round(1) }}
     target:
       entity_id: !input thermostat

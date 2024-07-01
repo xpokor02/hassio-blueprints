@@ -102,7 +102,7 @@ action:
           {% set adjustment = adjustment + float(away_modifier) %}
         {% endif %}
         
-        {% if vacation_mode == 'on' %}
+        {% if is_state(vacation_mode, 'on') %}
           {% set adjustment = adjustment + float(vacation_modifier) %}
         {% endif %}
         

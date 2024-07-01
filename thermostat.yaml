@@ -1,0 +1,121 @@
+blueprint:
+  name: Adjust Temperature
+  description: Adjusts the thermostat temperature based on time, presence, and modes.
+  domain: automation
+  input:
+    family_group:
+      name: Family Group
+      description: Group entity representing the family's presence
+      selector:
+        entity:
+          domain: group
+    home_temp:
+      name: Home Temperature
+      description: Input number for the desired home temperature
+      selector:
+        entity:
+          domain: input_number
+    thermostat:
+      name: Thermostat
+      description: The thermostat entity to control
+      selector:
+        entity:
+          domain: climate
+    vacation_mode:
+      name: Vacation Mode
+      description: Input boolean for vacation mode
+      selector:
+        entity:
+          domain: input_boolean
+    summer_modifier:
+      name: Summer Modifier
+      description: Temperature adjustment in summer
+      default: 1.0
+      selector:
+        number:
+          min: 0.0
+          max: 10.0
+          step: 0.5
+    vacation_modifier:
+      name: Vacation Modifier
+      description: Additional temperature adjustment during vacation mode
+      default: 2.0
+      selector:
+        number:
+          min: 0.0
+          max: 10.0
+          step: 0.5
+    away_modifier:
+      name: Away Modifier
+      description: Temperature adjustment when family is away or outside the time range
+      default: 1.0
+      selector:
+        number:
+          min: 0.0
+          max: 10.0
+          step: 0.5
+    dovolena_modifier:
+      name: Dovolena Modifier
+      description: Additional temperature adjustment when on vacation (dovolena)
+      default: 2.0
+      selector:
+        number:
+          min: 0.0
+          max: 10.0
+          step: 0.5
+    time_range_start:
+      name: Time Range Start
+      description: Start of the active time range (HH:MM:SS)
+      default: '09:00:00'
+      selector:
+        time:
+    time_range_end:
+      name: Time Range End
+      description: End of the active time range (HH:MM:SS)
+      default: '23:00:00'
+      selector:
+        time:
+
+trigger:
+  - platform: state
+    entity_id: !input family_group
+  - platform: state
+    entity_id: !input home_temp
+  - platform: state
+    entity_id: !input thermostat
+  - platform: state
+    entity_id: !input vacation_mode
+  - platform: state
+    entity_id: !input vacation_mode
+  - platform: time
+    at: !input time_range_start
+  - platform: time
+    at: !input time_range_end
+
+action:
+  - service: climate.set_temperature
+    data:
+      temperature: >
+        {% set base_temp = states('!input home_temp') | float %}
+        {% set adjustment = 0 %}
+        
+        {% if not (time_between(now(), !input.time_range_start, !input.time_range_end) and is_state('!input family_group', 'home')) %}
+          {% set adjustment = adjustment + !input.away_modifier %}
+        {% else %}
+          {% if is_state('input_boolean.dovolena', 'on') %}
+            {% set adjustment = adjustment + !input.dovolena_modifier %}
+          {% endif %}
+          {% if is_state('!input vacation_mode', 'on') %}
+            {% set adjustment = adjustment + !input.vacation_modifier %}
+          {% endif %}
+        {% endif %}
+
+        {% if is_state('!input thermostat', 'off') %}
+          {% set adjustment = adjustment + !input.summer_modifier %}
+        {% else %}
+          {% set adjustment = adjustment * -1 %}
+        {% endif %}
+        
+        {{ base_temp + adjustment }}
+    target:
+      entity_id: !input thermostat

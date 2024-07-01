@@ -99,7 +99,7 @@ action:
         {% set base_temp = float(states(home_temp)) %}
         
         {% if is_state(family_group, 'home') %}
-          {% if not (now().time() >= strptime(time_range_start, '%H:%M:%S').time() and now().time() <= strptime(time_range_end, '%H:%M:%S').time() and is_state(thermostat, 'heat')) %}
+          {% if not (now().time() >= strptime(time_range_start, '%H:%M:%S').time() and now().time() <= strptime(time_range_end, '%H:%M:%S').time() and is_state(thermostat, 'off')) %}
             {% set adjustment = adjustment + float(away_modifier) %}
           {% endif %}
         {% else %}  

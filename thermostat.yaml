@@ -21,12 +21,6 @@ blueprint:
       selector:
         entity:
           domain: climate
-    vacation_mode:
-      name: Vacation Mode
-      description: Input boolean for vacation mode
-      selector:
-        entity:
-          domain: input_boolean
     summer_modifier:
       name: Summer Modifier
       description: Temperature adjustment in summer
@@ -36,6 +30,12 @@ blueprint:
           min: 0.0
           max: 10.0
           step: 0.5
+    vacation_mode:
+      name: Vacation Mode
+      description: Input boolean for vacation mode
+      selector:
+        entity:
+          domain: input_boolean
     vacation_modifier:
       name: Vacation Modifier
       description: Additional temperature adjustment during vacation mode
@@ -49,15 +49,6 @@ blueprint:
       name: Away Modifier
       description: Temperature adjustment when family is away or outside the time range
       default: 1.0
-      selector:
-        number:
-          min: 0.0
-          max: 10.0
-          step: 0.5
-    dovolena_modifier:
-      name: Dovolena Modifier
-      description: Additional temperature adjustment when on vacation (dovolena)
-      default: 2.0
       selector:
         number:
           min: 0.0
@@ -102,9 +93,6 @@ action:
         {% if not (time_between(now(), !input.time_range_start, !input.time_range_end) and is_state('!input family_group', 'home')) %}
           {% set adjustment = adjustment + !input.away_modifier %}
         {% else %}
-          {% if is_state('input_boolean.dovolena', 'on') %}
-            {% set adjustment = adjustment + !input.dovolena_modifier %}
-          {% endif %}
           {% if is_state('!input vacation_mode', 'on') %}
             {% set adjustment = adjustment + !input.vacation_modifier %}
           {% endif %}
